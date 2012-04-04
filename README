@@ -1,0 +1,1 @@
+A BETA stored procedure for publishing AMQP messages to a RabbitMQ broker from an Oracle DB with Java installed.
