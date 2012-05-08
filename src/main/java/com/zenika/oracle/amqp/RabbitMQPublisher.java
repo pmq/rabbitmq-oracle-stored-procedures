@@ -37,6 +37,7 @@ public class RabbitMQPublisher {
 		System.setProperty("java.net.preferIPv4Stack", "true");
 	}
 
+	// FIXME declare on all brokers for brokerId?
 	public static void amqpExchangeDeclare(int brokerId, String exchange, String type) {
 		Connection connection = null;
 		Channel channel = null;
