@@ -18,3 +18,14 @@ create or replace procedure amqp_probe_servers
 (brokerId IN number)
 as language java
 name 'com.zenika.oracle.amqp.RabbitMQPublisher.amqpProbeAllServers(int)';
+
+CREATE TABLE BROKER
+  (
+    "BROKER_ID" NUMBER(*,0),
+    "HOST"      VARCHAR2(255 BYTE) NOT NULL ENABLE,
+    "PORT"      NUMBER(*,0) DEFAULT 5672,
+    "VHOST"     VARCHAR2(255 BYTE) DEFAULT '/',
+    "USERNAME"  VARCHAR2(255 BYTE) DEFAULT 'guest',
+    "PASSWORD"  VARCHAR2(255 BYTE) DEFAULT 'guest',
+    CONSTRAINT "BROKER_KEY" PRIMARY KEY ("BROKER_ID", "HOST", "PORT") ENABLE
+  );
