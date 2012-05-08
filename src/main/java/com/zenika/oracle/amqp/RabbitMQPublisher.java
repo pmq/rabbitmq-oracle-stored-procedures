@@ -28,10 +28,10 @@ import com.rabbitmq.client.ConnectionFactory;
 public class RabbitMQPublisher {
 
 	// -1 means infinity; value is in milliseconds
-	private final static int CONNECTION_CLOSE_TIMEOUT = -1;
+	private final static int CONNECTION_CLOSE_TIMEOUT = 2000;
 
 	// 0 means infinity; value is in milliseconds
-	private final static int CONNECTION_OPEN_TIMEOUT = 0;
+	private final static int CONNECTION_OPEN_TIMEOUT = 2000;
 
 	private final static String BROKER_SQL = "select host, port, vhost, username, password from broker where broker_id = ? order by host desc, port";
 
