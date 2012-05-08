@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.rabbitmq.client.AMQP.Exchange.DeclareOk;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -26,6 +25,10 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Pierre Queinnec <pierre.queinnec@zenika.com>
  */
 public class RabbitMQPublisher {
+
+	private final static int EXIT_SUCCESS = 0;
+	private final static int E_CANNOT_SEND = -1;
+	private final static int E_CANNOT_CLOSE = -2;
 
 	// -1 means infinity; value is in milliseconds
 	private final static int CONNECTION_CLOSE_TIMEOUT = 2000;
@@ -43,7 +46,7 @@ public class RabbitMQPublisher {
 	}
 
 	// FIXME declare on all brokers for brokerId?
-	public static void amqpExchangeDeclare(int brokerId, String exchange, String type) {
+	public static int amqpExchangeDeclare(int brokerId, String exchange, String type) {
 		Connection connection = null;
 		Channel channel = null;
 		try {
@@ -52,15 +55,11 @@ public class RabbitMQPublisher {
 			channel = connection.createChannel();
 
 			// declare the exchange
-			DeclareOk declareOk = channel.exchangeDeclare(exchange, type);
-
-			if (declareOk == null) {
-				// FIXME find the Oracle-way of handling this
-			}
+			channel.exchangeDeclare(exchange, type);
 
 		} catch (IOException ioe) {
-			// FIXME find the Oracle-way of handling this
 			ioe.printStackTrace();
+			return E_CANNOT_SEND;
 
 		} finally {
 			try {
@@ -73,10 +72,13 @@ public class RabbitMQPublisher {
 				}
 
 			} catch (IOException e) {
-				// FIXME find the Oracle-way of handling this
 				e.printStackTrace();
+				return E_CANNOT_CLOSE;
 			}
 		}
+
+		// everything went OK
+		return EXIT_SUCCESS;
 	}
 
 	/**

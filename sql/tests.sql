@@ -8,7 +8,7 @@ insert into broker (BROKER_ID,HOST,PORT,VHOST,USERNAME,PASSWORD) values (1,'192.
 insert into broker (BROKER_ID,HOST,PORT,VHOST,USERNAME,PASSWORD) values (1,'192.168.56.1',5673,'/','guest','guest');
 
 -- tests
-call amqp_exchange_declare(1, 'oracle', 'fanout');
-call amqp_publish(1, 'oracle', 'key', 'Hello World!');
+select amqp_exchange_declare(1, 'oracle', 'fanout') from dual;
+select amqp_publish(1, 'oracle', 'key', 'Hello World!') from dual;
 call amqp_print_configuration(1);
 call amqp_probe_servers(1);
