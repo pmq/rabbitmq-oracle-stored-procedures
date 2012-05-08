@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +34,12 @@ public class RabbitMQPublisher {
 	private final static int CONNECTION_OPEN_TIMEOUT = 0;
 
 	private final static String BROKER_SQL = "select host, port, vhost, username, password from broker where broker_id = ? order by host desc, port";
+
+	private static Hashtable<Integer, FullAddress> state;
 	static {
 		// comment this out if you don't have the corresponding SYS:java.util.PropertyPermission
 		System.setProperty("java.net.preferIPv4Stack", "true");
+		state = new Hashtable<Integer, FullAddress>();
 	}
 
 	// FIXME declare on all brokers for brokerId?
@@ -97,6 +102,9 @@ public class RabbitMQPublisher {
 			// send the message
 			channel.basicPublish(exchange, routingKey, false, false, null, message.getBytes());
 
+			// remember the current broker used
+			state.put(brokerId, connectionState.currentAddress);
+
 		} catch (IOException ioe) {
 			// FIXME find the Oracle-way of handling this
 			ioe.printStackTrace();
@@ -122,13 +130,32 @@ public class RabbitMQPublisher {
 		BrokerConnectionState connectionState = new BrokerConnectionState();
 		fillAllAdresses(connectionState, brokerId);
 
+		// retrieve the active broker instance
+		FullAddress activeBroker = state.get(brokerId);
+		boolean foundActiveInDb = false;
+
 		if (connectionState.addresses != null) {
 			Iterator<FullAddress> fullAddressesIter = connectionState.addresses.iterator();
 
 			while (fullAddressesIter.hasNext()) {
 				FullAddress currFullAddress = (FullAddress) fullAddressesIter.next();
-				System.out.println(currFullAddress);
+
+				if (currFullAddress.equals(activeBroker)) {
+					System.out.println(currFullAddress + " (active)");
+					foundActiveInDb = true;
+
+				} else {
+					System.out.println(currFullAddress);
+				}
 			}
+		}
+
+		if (activeBroker == null) {
+			System.out.println("WARNING: no previously used broker was found");
+
+		} else if (!foundActiveInDb) {
+			System.out.println("WARNING: the previously used broker (" + activeBroker
+					+ ") is not anymore in the DB configuration");
 		}
 	}
 
@@ -168,6 +195,9 @@ public class RabbitMQPublisher {
 		BrokerConnectionState connectionState = new BrokerConnectionState();
 		fillAllAdresses(connectionState, brokerId);
 
+		// fill in the previously used broker instance
+		connectionState.currentAddress = state.get(brokerId);
+
 		return connectionState;
 	}
 
@@ -201,10 +231,12 @@ public class RabbitMQPublisher {
 		Connection connection = null;
 
 		if (connectionState.addresses != null) {
-			Iterator<FullAddress> fullAddressesIter = connectionState.addresses.iterator();
+			// sort brokers so that the previously used one is first
+			List<FullAddress> sortedBrokers = connectionState.getSortedBrokersToTry();
+			Iterator<FullAddress> sortedBrokersIter = sortedBrokers.iterator();
 
-			while (!connected && fullAddressesIter.hasNext()) {
-				FullAddress currFullAddress = (FullAddress) fullAddressesIter.next();
+			while (!connected && sortedBrokersIter.hasNext()) {
+				FullAddress currFullAddress = (FullAddress) sortedBrokersIter.next();
 
 				// DEBUG
 				System.err.println("trying to connect to " + currFullAddress);
@@ -212,7 +244,10 @@ public class RabbitMQPublisher {
 				// try to open the connection
 				try {
 					connection = openConnection(currFullAddress);
+
+					// connection established
 					connected = true;
+					connectionState.currentAddress = currFullAddress;
 					System.err.println("connected to " + currFullAddress);
 
 				} catch (IOException ioe) {
@@ -226,7 +261,7 @@ public class RabbitMQPublisher {
 
 		// DEBUG
 		if (!connected) {
-			System.err.println("giving up, no AMQP server is responding");
+			System.err.println("giving up, no broker is responding");
 		}
 
 		return connection;
@@ -250,14 +285,31 @@ public class RabbitMQPublisher {
 		// try to open the connection
 		connection = connectionFactory.newConnection();
 		System.err.println("connected to " + address);
+
 		return connection;
 	}
 
 	private static class BrokerConnectionState {
 		public List<FullAddress> addresses;
+		public FullAddress currentAddress;
 
 		public BrokerConnectionState() {
 			this.addresses = new ArrayList<FullAddress>();
+		}
+
+		@SuppressWarnings("unused")
+		public boolean isCurrentAddressStillValid() {
+			return this.addresses.contains(this.currentAddress);
+		}
+
+		public List<FullAddress> getSortedBrokersToTry() {
+			int currentOffset = this.addresses.indexOf(this.currentAddress);
+			if (currentOffset != -1) {
+				// rotate so that order is retained, and previously used broker is first
+				Collections.rotate(this.addresses, -currentOffset);
+			}
+
+			return this.addresses;
 		}
 	}
 
@@ -287,6 +339,50 @@ public class RabbitMQPublisher {
 
 			return builder.toString();
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((address == null) ? 0 : address.hashCode());
+			result = prime * result + ((password == null) ? 0 : password.hashCode());
+			result = prime * result + ((username == null) ? 0 : username.hashCode());
+			result = prime * result + ((vhost == null) ? 0 : vhost.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			FullAddress other = (FullAddress) obj;
+			if (address == null) {
+				if (other.address != null)
+					return false;
+			} else if (!address.equals(other.address))
+				return false;
+			if (password == null) {
+				if (other.password != null)
+					return false;
+			} else if (!password.equals(other.password))
+				return false;
+			if (username == null) {
+				if (other.username != null)
+					return false;
+			} else if (!username.equals(other.username))
+				return false;
+			if (vhost == null) {
+				if (other.vhost != null)
+					return false;
+			} else if (!vhost.equals(other.vhost))
+				return false;
+			return true;
+		}
+
 	}
 
 }
