@@ -225,7 +225,7 @@ public class RabbitMQPublisher {
 
 		// DEBUG
 		if (!connected) {
-			System.err.println("giving up, no AMQP servers is responding");
+			System.err.println("giving up, no AMQP server is responding");
 		}
 
 		return connection;
