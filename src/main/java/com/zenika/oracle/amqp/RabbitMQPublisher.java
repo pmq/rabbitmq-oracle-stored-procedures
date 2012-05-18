@@ -36,6 +36,7 @@ public class RabbitMQPublisher {
 	// 0 means infinity; value is in milliseconds
 	private final static int CONNECTION_OPEN_TIMEOUT = 2000;
 
+	private final static String ORACLE_INTERNAL_JDBC_URL = "jdbc:default:connection:";
 	private final static String BROKER_SQL = "select host, port, vhost, username, password from broker where broker_id = ? order by host desc, port";
 
 	private static Hashtable<Integer, FullAddress> state;
@@ -84,14 +85,14 @@ public class RabbitMQPublisher {
 	/**
 	 * FIXME find how to hook on the TX behavior?
 	 */
-	public static void amqpPublish(int brokerId, String exchange, String routingKey, String message) {
-		amqpPublish(brokerId, exchange, routingKey, message, null);
+	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message) {
+		return amqpPublish(brokerId, exchange, routingKey, message, null);
 	}
 
 	/**
 	 * FIXME timeout intelligently. FIXME test whether we can declare a type conversion for a Map.
 	 */
-	public static void amqpPublish(int brokerId, String exchange, String routingKey, String message,
+	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message,
 			Map<String, String> properties) {
 
 		Connection connection = null;
@@ -108,8 +109,8 @@ public class RabbitMQPublisher {
 			state.put(brokerId, connectionState.currentAddress);
 
 		} catch (IOException ioe) {
-			// FIXME find the Oracle-way of handling this
 			ioe.printStackTrace();
+			return E_CANNOT_SEND;
 
 		} finally {
 			try {
@@ -122,10 +123,13 @@ public class RabbitMQPublisher {
 				}
 
 			} catch (IOException e) {
-				// FIXME find the Oracle-way of handling this
 				e.printStackTrace();
+				return E_CANNOT_CLOSE;
 			}
 		}
+
+		// everything went OK
+		return EXIT_SUCCESS;
 	}
 
 	public static void amqpPrintFullConfiguration(int brokerId) {
@@ -205,25 +209,42 @@ public class RabbitMQPublisher {
 
 	private static void fillAllAdresses(BrokerConnectionState connectionState, int brokerId) {
 		try {
-			java.sql.Connection conn = DriverManager.getConnection("jdbc:default:connection:");
+			java.sql.Connection conn = DriverManager.getConnection(ORACLE_INTERNAL_JDBC_URL);
 
-			PreparedStatement statement = conn.prepareStatement(BROKER_SQL);
-			statement.setInt(1, brokerId);
-			ResultSet results = statement.executeQuery();
+			try {
+				PreparedStatement statement = conn.prepareStatement(BROKER_SQL);
 
-			while (results.next()) {
-				String host = results.getString(1);
-				int port = results.getInt(2);
-				String vhost = results.getString(3);
-				String username = results.getString(4);
-				String password = results.getString(5);
+				try {
+					statement.setInt(1, brokerId);
+					ResultSet results = statement.executeQuery();
 
-				FullAddress currAddress = new FullAddress(new Address(host, port), vhost, username, password);
-				connectionState.addresses.add(currAddress);
+					try {
+						while (results.next()) {
+							String host = results.getString(1);
+							int port = results.getInt(2);
+							String vhost = results.getString(3);
+							String username = results.getString(4);
+							String password = results.getString(5);
+
+							FullAddress currAddress = new FullAddress(new Address(host, port), vhost, username,
+									password);
+							connectionState.addresses.add(currAddress);
+						}
+
+					} finally {
+						results.close();
+					}
+
+				} finally {
+					statement.close();
+				}
+
+			} finally {
+				conn.close();
 			}
 
 		} catch (SQLException sqle) {
-			// FIXME verify this
+			// FIXME make up a more user-friendly error
 			sqle.printStackTrace();
 		}
 	}
@@ -254,9 +275,8 @@ public class RabbitMQPublisher {
 
 				} catch (IOException ioe) {
 					// we catch SocketTimeoutException
-					System.err.println("cannot connect to " + currFullAddress);
-					// FIXME comment out
-					ioe.printStackTrace();
+					// DEBUG ioe.printStackTrace();
+					System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
 				}
 			}
 		}
