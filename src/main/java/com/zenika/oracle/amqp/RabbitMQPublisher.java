@@ -46,8 +46,20 @@ public class RabbitMQPublisher {
 		state = new Hashtable<Integer, FullAddress>();
 	}
 
-	// FIXME declare on all brokers for brokerId?
+	/**
+	 * Declare an AMQP exchange on the currently used broker with the given ID.
+	 * 
+	 * @param brokerId
+	 *            the ID of the broker in the configuration table
+	 * @param exchange
+	 *            the name of the AMQP exchange
+	 * @param type
+	 *            the type of the exchange, as defined by the RabbitMQ driver
+	 * @see Channel#exchangeDeclare(String, String)
+	 * @return an error code, see the source
+	 */
 	public static int amqpExchangeDeclare(int brokerId, String exchange, String type) {
+		// FIXME declare on all brokers for brokerId?
 		Connection connection = null;
 		Channel channel = null;
 		try {
@@ -83,7 +95,17 @@ public class RabbitMQPublisher {
 	}
 
 	/**
-	 * FIXME find how to hook on the TX behavior?
+	 * Publish an AMQP message to the given exchange.
+	 * 
+	 * @param brokerId
+	 *            the ID of the broker in the configuration table
+	 * @param exchange
+	 *            the name of the AMQP exchange
+	 * @param routingKey
+	 *            the AMQP routing key
+	 * @param message
+	 *            the payload
+	 * @return an error code, see the source
 	 */
 	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message) {
 		return amqpPublish(brokerId, exchange, routingKey, message, null);
@@ -132,6 +154,13 @@ public class RabbitMQPublisher {
 		return EXIT_SUCCESS;
 	}
 
+	/**
+	 * Print the current configuration for broker definitions. In case there's more than one broker per ID, the active
+	 * one is indicated.
+	 * 
+	 * @param brokerId
+	 *            the ID of the broker
+	 */
 	public static void amqpPrintFullConfiguration(int brokerId) {
 		BrokerConnectionState connectionState = new BrokerConnectionState();
 		fillAllAdresses(connectionState, brokerId);
@@ -165,6 +194,13 @@ public class RabbitMQPublisher {
 		}
 	}
 
+	/**
+	 * Probe the current state for the defined brokers by trying to connect. In case there's more than one broker per
+	 * ID, probe them all.
+	 * 
+	 * @param brokerId
+	 *            the ID of the broker
+	 */
 	public static void amqpProbeAllServers(int brokerId) {
 		BrokerConnectionState connectionState = new BrokerConnectionState();
 		fillAllAdresses(connectionState, brokerId);
