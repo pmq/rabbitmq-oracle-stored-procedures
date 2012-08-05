@@ -30,6 +30,9 @@ public class RabbitMQPublisher {
 	private final static int E_CANNOT_SEND = -1;
 	private final static int E_CANNOT_CLOSE = -2;
 
+	// enable/disable the debug output
+	private final static boolean ENABLE_DEBUG = true;
+
 	// -1 means infinity; value is in milliseconds
 	private final static int CONNECTION_CLOSE_TIMEOUT = 2000;
 
@@ -156,7 +159,7 @@ public class RabbitMQPublisher {
 
 	/**
 	 * Print the current configuration for broker definitions. In case there's more than one broker per ID, the active
-	 * one is indicated.
+	 * one is indicated. The resulting output is written on stdout.
 	 * 
 	 * @param brokerId
 	 *            the ID of the broker
@@ -196,7 +199,7 @@ public class RabbitMQPublisher {
 
 	/**
 	 * Probe the current state for the defined brokers by trying to connect. In case there's more than one broker per
-	 * ID, probe them all.
+	 * ID, probe them all. The resulting output is written on stdout.
 	 * 
 	 * @param brokerId
 	 *            the ID of the broker
@@ -297,8 +300,9 @@ public class RabbitMQPublisher {
 			while (!connected && sortedBrokersIter.hasNext()) {
 				FullAddress currFullAddress = (FullAddress) sortedBrokersIter.next();
 
-				// DEBUG
-				System.err.println("trying to connect to " + currFullAddress);
+				if (ENABLE_DEBUG) {
+					System.err.println("trying to connect to " + currFullAddress);
+				}
 
 				// try to open the connection
 				try {
@@ -307,19 +311,24 @@ public class RabbitMQPublisher {
 					// connection established
 					connected = true;
 					connectionState.currentAddress = currFullAddress;
-					System.err.println("connected to " + currFullAddress);
+
+					if (ENABLE_DEBUG) {
+						System.err.println("connected to " + currFullAddress);
+					}
 
 				} catch (IOException ioe) {
 					// we catch SocketTimeoutException
-					// DEBUG ioe.printStackTrace();
-					System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
+					if (ENABLE_DEBUG) {
+						System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
+					}
 				}
 			}
 		}
 
-		// DEBUG
 		if (!connected) {
-			System.err.println("giving up, no broker is responding");
+			if (ENABLE_DEBUG) {
+				System.err.println("giving up, no broker is responding");
+			}
 		}
 
 		return connection;
@@ -328,8 +337,9 @@ public class RabbitMQPublisher {
 	private static Connection openConnection(FullAddress address) throws IOException {
 		Connection connection = null;
 
-		// DEBUG
-		System.err.println("trying to connect to " + address);
+		if (ENABLE_DEBUG) {
+			System.err.println("trying to connect to " + address);
+		}
 
 		ConnectionFactory connectionFactory = new ConnectionFactory();
 		connectionFactory.setHost(address.address.getHost());
@@ -342,7 +352,10 @@ public class RabbitMQPublisher {
 
 		// try to open the connection
 		connection = connectionFactory.newConnection();
-		System.err.println("connected to " + address);
+
+		if (ENABLE_DEBUG) {
+			System.err.println("connected to " + address);
+		}
 
 		return connection;
 	}
