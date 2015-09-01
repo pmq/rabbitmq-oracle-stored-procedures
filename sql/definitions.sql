@@ -6,10 +6,10 @@ as language java
 name 'com.zenika.oracle.amqp.RabbitMQPublisher.amqpExchangeDeclare(int, java.lang.String, java.lang.String) return int';
 
 create or replace function amqp_publish
-(brokerId IN number, exchange IN varchar2, routingKey IN varchar2, message IN varchar2)
+(brokerId IN number, exchange IN varchar2, routingKey IN varchar2, message IN varchar2, xml_string_properties IN varchar2)
 return NUMBER
 as language java
-name 'com.zenika.oracle.amqp.RabbitMQPublisher.amqpPublish(int, java.lang.String, java.lang.String, java.lang.String) return int';
+name 'com.zenika.oracle.amqp.RabbitMQPublisher.amqpPublish(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String) return int';
 
 create or replace procedure amqp_print_configuration
 (brokerId IN number)

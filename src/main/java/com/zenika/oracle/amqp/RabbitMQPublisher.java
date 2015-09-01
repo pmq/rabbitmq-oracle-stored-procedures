@@ -113,12 +113,8 @@ public class RabbitMQPublisher {
 	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message) {
 		return amqpPublish(brokerId, exchange, routingKey, message, null);
 	}
-
-	/**
-	 * FIXME timeout intelligently. FIXME test whether we can declare a type conversion for a Map.
-	 */
-	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message,
-			Map<String, String> properties) {
+	
+	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message, String xml_string_properties) {
 
 		Connection connection = null;
 		Channel channel = null;
@@ -128,7 +124,8 @@ public class RabbitMQPublisher {
 			channel = connection.createChannel();
 
 			// send the message
-			channel.basicPublish(exchange, routingKey, false, false, null, message.getBytes());
+			
+			channel.basicPublish(exchange, routingKey, false, false, xml.getMapFromXml(xml_string_properties), message.getBytes());
 
 			// remember the current broker used
 			state.put(brokerId, connectionState.currentAddress);
