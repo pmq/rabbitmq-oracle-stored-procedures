@@ -41,8 +41,10 @@ public class TestRabbitMQDriver {
 		System.out.println("SimpleRabbitMQ.amqpPublish() #1");
 		try {
 			ConnectionFactory connectionFactory = new ConnectionFactory();
-			connectionFactory.setHost("192.168.56.1");
+			connectionFactory.setHost("172.21.10.15");
 			connectionFactory.setPort(5672);
+			connectionFactory.setUsername("guest");
+			connectionFactory.setPassword("guest");
 
 			System.out.println("SimpleRabbitMQ.amqpPublish() #2");
 			Connection connection = connectionFactory.newConnection();
