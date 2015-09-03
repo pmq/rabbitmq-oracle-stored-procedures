@@ -10,7 +10,8 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+//import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
@@ -87,7 +88,7 @@ public class RabbitMQPublisher {
 					connection.close(CONNECTION_CLOSE_TIMEOUT);
 				}
 
-			} catch (IOException e) {
+			} catch (IOException | TimeoutException e) {
 				e.printStackTrace();
 				return E_CANNOT_CLOSE;
 			}
@@ -124,8 +125,10 @@ public class RabbitMQPublisher {
 			channel = connection.createChannel();
 
 			// send the message
-			
-			channel.basicPublish(exchange, routingKey, false, false, xml.getMapFromXml(xml_string_properties), message.getBytes());
+			if(xml_string_properties == null)
+				channel.basicPublish(exchange, routingKey, false, false, null, message.getBytes());
+			else
+				channel.basicPublish(exchange, routingKey, false, false, xml.getMapFromXml(xml_string_properties), message.getBytes());
 
 			// remember the current broker used
 			state.put(brokerId, connectionState.currentAddress);
@@ -144,7 +147,7 @@ public class RabbitMQPublisher {
 					connection.close(CONNECTION_CLOSE_TIMEOUT);
 				}
 
-			} catch (IOException e) {
+			} catch (IOException | TimeoutException e) {
 				e.printStackTrace();
 				return E_CANNOT_CLOSE;
 			}
@@ -216,7 +219,7 @@ public class RabbitMQPublisher {
 					currConnection = openConnection(currFullAddress);
 					System.out.println(currFullAddress + " : SUCCESSFUL");
 
-				} catch (IOException ioe) {
+				} catch (IOException | TimeoutException ioe) {
 					System.out.println(currFullAddress + " : FAILED (" + ioe.getMessage() + ')');
 
 				} finally {
@@ -313,7 +316,7 @@ public class RabbitMQPublisher {
 						System.err.println("connected to " + currFullAddress);
 					}
 
-				} catch (IOException ioe) {
+				} catch (IOException | TimeoutException ioe) {
 					// we catch SocketTimeoutException
 					if (ENABLE_DEBUG) {
 						System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
@@ -331,7 +334,7 @@ public class RabbitMQPublisher {
 		return connection;
 	}
 
-	private static Connection openConnection(FullAddress address) throws IOException {
+	private static Connection openConnection(FullAddress address) throws IOException, TimeoutException {
 		Connection connection = null;
 
 		if (ENABLE_DEBUG) {
