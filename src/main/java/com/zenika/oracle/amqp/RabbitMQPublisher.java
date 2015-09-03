@@ -62,7 +62,7 @@ public class RabbitMQPublisher {
 	 * @see Channel#exchangeDeclare(String, String)
 	 * @return an error code, see the source
 	 */
-	public static int amqpExchangeDeclare(int brokerId, String exchange, String type) {
+	public static int amqpExchangeDeclare(int brokerId, String exchange, String type, int durable) {
 		// FIXME declare on all brokers for brokerId?
 		Connection connection = null;
 		Channel channel = null;
@@ -72,7 +72,10 @@ public class RabbitMQPublisher {
 			channel = connection.createChannel();
 
 			// declare the exchange
-			channel.exchangeDeclare(exchange, type);
+			if(durable == 1)
+				channel.exchangeDeclare(exchange, type, true);
+			else
+				channel.exchangeDeclare(exchange, type);
 
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -88,7 +91,10 @@ public class RabbitMQPublisher {
 					connection.close(CONNECTION_CLOSE_TIMEOUT);
 				}
 
-			} catch (IOException | TimeoutException e) {
+			} catch (TimeoutException e) {
+				e.printStackTrace();
+				return E_CANNOT_CLOSE;
+			} catch (IOException e) {
 				e.printStackTrace();
 				return E_CANNOT_CLOSE;
 			}
@@ -147,7 +153,10 @@ public class RabbitMQPublisher {
 					connection.close(CONNECTION_CLOSE_TIMEOUT);
 				}
 
-			} catch (IOException | TimeoutException e) {
+			} catch (IOException e) {
+				e.printStackTrace();
+				return E_CANNOT_CLOSE;
+			} catch (TimeoutException e) {
 				e.printStackTrace();
 				return E_CANNOT_CLOSE;
 			}
@@ -218,10 +227,10 @@ public class RabbitMQPublisher {
 				try {
 					currConnection = openConnection(currFullAddress);
 					System.out.println(currFullAddress + " : SUCCESSFUL");
-
-				} catch (IOException | TimeoutException ioe) {
+				} catch (IOException ioe) {
 					System.out.println(currFullAddress + " : FAILED (" + ioe.getMessage() + ')');
-
+				} catch (TimeoutException ioe) {
+					System.out.println(currFullAddress + " : FAILED (" + ioe.getMessage() + ')');
 				} finally {
 					if (currConnection != null) {
 						try {
@@ -316,12 +325,18 @@ public class RabbitMQPublisher {
 						System.err.println("connected to " + currFullAddress);
 					}
 
-				} catch (IOException | TimeoutException ioe) {
+				} catch (TimeoutException ioe) {
+					// we catch SocketTimeoutException
+					if (ENABLE_DEBUG) {
+						System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
+					}
+				} catch (IOException ioe) {
 					// we catch SocketTimeoutException
 					if (ENABLE_DEBUG) {
 						System.err.println("cannot connect to " + currFullAddress + " (" + ioe.getMessage() + ')');
 					}
 				}
+				
 			}
 		}
 
