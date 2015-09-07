@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/test/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/rabbitmq-java-client-bin-3.5.4/commons-cli-1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/rabbitmq-java-client-bin-3.5.4/commons-io-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/rabbitmq-java-client-bin-3.5.4/junit.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/rabbitmq-java-client-bin-3.5.4/rabbitmq-client.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/rabbitmq-java-client-bin-3.5.4/rabbitmq-client-tests.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/spring-amqp-1.1.4.RELEASE.jar/spring-amqp-1.1.4.RELEASE.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/spring-rabbit-1.1.4.RELEASE.jar/spring-rabbit-1.1.4.RELEASE.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/org.springframework.context.jar/org.springframework.context.jar"/>
+	<classpathentry kind="lib" path="C:/Users/BryzzhinIS/Downloads/spring-beans-3.0.4.RELEASE.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
