@@ -15,6 +15,13 @@ select amqp_publish(1, 'oracle', 'key', 'Hello World!'
 	      <DELIVERYMODE>2</DELIVERYMODE>
 	      <CONTENTTYPE>application/vnd.masstransit+json</CONTENTTYPE>
 	      <MESSAGEID>'||regexp_replace(rawtohex(sys_guid()),'([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})', '\1-\2-\3-\4-\5') ||'</MESSAGEID>
+		  <HEADEARS>
+				<content_type>application/vnd.masstransit+json</content_type>
+				<head1>test</head1>
+		  </HEADEARS>
+		  <CONTENTTYPE>XML</CONTENTTYPE>
+		  <PRIORITY>10</PRIORITY>
+		  <CONTENTENCODING>iso-8859-5</CONTENTENCODING>		  
 	  </properities>') from dual;
 select amqp_publish(brokerid     => 1,
 					exchange     => 'oracle',

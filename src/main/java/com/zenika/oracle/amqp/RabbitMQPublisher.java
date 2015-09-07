@@ -104,29 +104,13 @@ public class RabbitMQPublisher {
 		return EXIT_SUCCESS;
 	}
 
-	/**
-	 * Publish an AMQP message to the given exchange.
-	 * 
-	 * @param brokerId
-	 *            the ID of the broker in the configuration table
-	 * @param exchange
-	 *            the name of the AMQP exchange
-	 * @param routingKey
-	 *            the AMQP routing key
-	 * @param message
-	 *            the payload
-	 * @return an error code, see the source
-	 */
-	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message) {
-		return amqpPublish(brokerId, exchange, routingKey, message, null);
-	}
 	
-	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message, String xml_string_properties) {
+	public static int amqpPublish(BrokerConnectionState connectionState, String exchange, String routingKey, String message, String xml_string_properties) {
 
 		Connection connection = null;
 		Channel channel = null;
 		try {
-			BrokerConnectionState connectionState = getConnectionState(brokerId);
+			//BrokerConnectionState connectionState = getConnectionState(brokerId);
 			connection = openConnection(connectionState);
 			channel = connection.createChannel();
 
@@ -134,10 +118,7 @@ public class RabbitMQPublisher {
 			if(xml_string_properties == null)
 				channel.basicPublish(exchange, routingKey, false, false, null, message.getBytes());
 			else
-				channel.basicPublish(exchange, routingKey, false, false, xml.getMapFromXml(xml_string_properties), message.getBytes());
-
-			// remember the current broker used
-			state.put(brokerId, connectionState.currentAddress);
+				channel.basicPublish(exchange, routingKey, false, false, xml.basicPropertiesFromXml(xml_string_properties), message.getBytes());		
 
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -164,6 +145,28 @@ public class RabbitMQPublisher {
 
 		// everything went OK
 		return EXIT_SUCCESS;
+	}
+	
+
+	/**
+	 * Publish an AMQP message to the given exchange.
+	 * 
+	 * @param brokerId
+	 *            the ID of the broker in the configuration table
+	 * @param exchange
+	 *            the name of the AMQP exchange
+	 * @param routingKey
+	 *            the AMQP routing key
+	 * @param message
+	 *            the payload
+	 * @return an error code, see the source
+	 */
+	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message) {
+		return amqpPublish(brokerId, exchange, routingKey, message, null);
+	}
+	
+	public static int amqpPublish(int brokerId, String exchange, String routingKey, String message, String xml_string_properties) {
+		return amqpPublish(getConnectionState(brokerId), exchange, routingKey, message, xml_string_properties);
 	}
 
 	/**
@@ -245,13 +248,25 @@ public class RabbitMQPublisher {
 		}
 	}
 
+	public static BrokerConnectionState createConnectionState(String host,int port, String vhost, String username, String password){
+		BrokerConnectionState connectionState = new BrokerConnectionState();
+		connectionState.currentAddress = new FullAddress(new Address(host, port), vhost, username,password);
+		connectionState.addresses.add(connectionState.currentAddress);
+		return connectionState;
+	}
+	
 	private static BrokerConnectionState getConnectionState(int brokerId) {
 		BrokerConnectionState connectionState = new BrokerConnectionState();
 		fillAllAdresses(connectionState, brokerId);
 
 		// fill in the previously used broker instance
-		connectionState.currentAddress = state.get(brokerId);
-
+		FullAddress currAddress = state.get(brokerId);
+		if (currAddress == null) {
+			fillAllAdresses(connectionState, brokerId);
+			currAddress = state.get(brokerId);
+			state.put(brokerId, currAddress);
+		}		
+		connectionState.currentAddress = currAddress;
 		return connectionState;
 	}
 
@@ -274,8 +289,7 @@ public class RabbitMQPublisher {
 							String username = results.getString(4);
 							String password = results.getString(5);
 
-							FullAddress currAddress = new FullAddress(new Address(host, port), vhost, username,
-									password);
+							FullAddress currAddress = new FullAddress(new Address(host, port), vhost, username, password);
 							connectionState.addresses.add(currAddress);
 						}
 
@@ -375,7 +389,7 @@ public class RabbitMQPublisher {
 		return connection;
 	}
 
-	private static class BrokerConnectionState {
+	protected static class BrokerConnectionState {
 		public List<FullAddress> addresses;
 		public FullAddress currentAddress;
 
